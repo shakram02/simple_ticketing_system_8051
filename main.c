@@ -25,13 +25,16 @@ char pressed_key;
 static char LAST_VALID_KEY_G = KEYPAD_NO_NEW_DATA;
 
 char disp_seven_seg(char);
+char scan_keypad();
+char disp_vals_to_int();
+
+void int_to_disp_vals(char);
 void setup_timer();
 void timer0_isr();
 void setup_serial();
 void setup_seven_seg();
 void send_char(unsigned char);
 void debounce();
-char scan_keypad();
 
 void main()
 {
@@ -57,23 +60,43 @@ void main()
 		{
 			// Rotate the 7-seg displayed character
 			char old_disp_val = disp_vals[0];
-			disp_vals[0] = disp_seven_seg(pressed_key);
-			disp_vals[1] = old_disp_val;
 			
-			send_char(pressed_key);
+			if (pressed_key >= '0' && pressed_key <= '9'){
+				disp_vals[0] = pressed_key;
+				disp_vals[1] = old_disp_val;
+			
+				send_char(pressed_key);	
+			}
+			else {
+				// inc / dec
+				char num = disp_vals_to_int();
+				char op_result = 0;
+				if (pressed_key == '#'){
+					// inc
+					op_result = (num+1) % 100;
+				}
+				else if (pressed_key == '*'){
+					// dec, return to 99 if the decrementation result is -1
+					op_result = (num - 1) < 0 ? 99 : (num - 1);
+				}
+				
+				int_to_disp_vals(op_result);
+			}
+			
 		}
 	}
 }
 
+/* Converts the ASCII input to 7-seg value ready for display */
 char disp_seven_seg(char in){
 	char c = in - '0';
-	return (c < 0 || c > 9) ? ~0 : ~seven_seg_map[c];
+	return (c < 0 || c > 9) ? 0xFF : ~seven_seg_map[c];
 }
 
 /* Initialize seven segment to display 00 */
 void setup_seven_seg(){
-	disp_vals[0] = disp_seven_seg(0);
-	disp_vals[1] = disp_seven_seg(0);
+	disp_vals[0] = '0';
+	disp_vals[1] = '0';
 }
 
 void timer0_isr() interrupt 1
@@ -82,14 +105,31 @@ void timer0_isr() interrupt 1
 	TH0 = 0xFC;	// 0.5 msec
 	TL0 = 0x65;
 	
-	if (overflow_count == 1000){
+	if (overflow_count == 500){
 		seg_select = ~seg_select;	/* Change the 7-seg */
 		
-		P0 = disp_vals[mux_index];
+		P0 = disp_seven_seg(disp_vals[mux_index]);
 		mux_index=~mux_index;
 		
 		overflow_count = 0;
 	}
+}
+
+/* Returns the decimal for the displayed ASCII chars */
+char disp_vals_to_int(){
+	char units = disp_vals[0] - '0';
+	char tens = disp_vals[1] - '0';
+	
+	return (tens*10) + units;
+}
+
+/* Converts the input number to ascii*/
+void int_to_disp_vals(char in){
+	char units = in % 10;
+	char tens = in / 10;
+	
+	disp_vals[0] = units + '0';
+	disp_vals[1] = tens + '0';
 }
 
 /* Sends a character using serial uart */
