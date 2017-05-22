@@ -1,6 +1,10 @@
 #include <at89c51xd2.h>
 #include <stdio.h>
+
 #define KEYPAD_NO_NEW_DATA '-'
+#define INCREMENT_KEY '#'
+#define DECREMENT_KEY '-'
+#define CLEAR_KEY '+'
 
 sbit r0 = P1^7;
 sbit r1 = P1^6;
@@ -71,11 +75,11 @@ void main()
 				// inc / dec
 				char num = disp_vals_to_int();
 				char op_result = 0;
-				if (pressed_key == '#'){
-					// inc
+				if (pressed_key == INCREMENT_KEY ){
+					// inc, modulo is used to return the value to 0 once it's 100
 					op_result = (num+1) % 100;
 				}
-				else if (pressed_key == '*'){
+				else if (pressed_key == DECREMENT_KEY){
 					// dec, return to 99 if the decrementation result is -1
 					op_result = (num - 1) < 0 ? 99 : (num - 1);
 				}
