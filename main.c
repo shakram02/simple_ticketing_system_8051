@@ -3,7 +3,7 @@
 
 #define KEYPAD_NO_NEW_DATA '-'
 #define INCREMENT_KEY '#'
-#define DECREMENT_KEY '-'
+#define DECREMENT_KEY '*'
 #define CLEAR_KEY '+'
 
 sbit r0 = P1^7;
@@ -73,8 +73,9 @@ void main()
 			}
 			else {
 				// inc / dec
-				char num = disp_vals_to_int();
 				char op_result = 0;
+				char num = disp_vals_to_int();
+				
 				if (pressed_key == INCREMENT_KEY ){
 					// inc, modulo is used to return the value to 0 once it's 100
 					op_result = (num+1) % 100;
